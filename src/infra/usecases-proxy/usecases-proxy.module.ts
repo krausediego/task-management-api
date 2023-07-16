@@ -34,12 +34,22 @@ export class UseCasesProxyModule {
       module: UseCasesProxyModule,
       providers: [
         {
-          inject: [DatabaseUserRepository, BcryptService],
+          inject: [
+            DatabaseUserRepository,
+            BcryptService,
+            JwtTokenService,
+            TokenCache,
+          ],
           provide: UseCasesProxyModule.SIGN_UP_USECASES_PROXY,
           useFactory: (
             userRepo: DatabaseUserRepository,
             bcrypt: BcryptService,
-          ) => new UseCaseProxy(new SignUpUseCases(userRepo, bcrypt)),
+            jwt: JwtTokenService,
+            tokenCache: TokenCache,
+          ) =>
+            new UseCaseProxy(
+              new SignUpUseCases(userRepo, bcrypt, jwt, tokenCache),
+            ),
         },
         {
           inject: [

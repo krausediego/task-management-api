@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Inject, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -12,7 +12,6 @@ import { SignUpUseCases } from 'src/usecases/auth/sign-up.usecases';
 import { AuthLogoutDto, AuthSignInDto, AuthSignUpDto } from './auth.dto';
 import { SignInUseCases } from 'src/usecases/auth/sign-in.usecases';
 import { LogoutUseCases } from 'src/usecases/auth/logout.usecases';
-import { AuthGuard } from 'src/infra/guards/auth.guard';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -57,14 +56,5 @@ export class AuthController {
   async logout(@Body() data: AuthLogoutDto) {
     const { id } = data;
     return this.logoutUsecaseProxy.getInstance().disconnectAccount(id);
-  }
-
-  @UseGuards(AuthGuard)
-  @Get('profile')
-  @ApiBearerAuth()
-  // @ApiBody()
-  @ApiOperation({ description: 'profile' })
-  getProfile() {
-    return { ok: 'ok' };
   }
 }

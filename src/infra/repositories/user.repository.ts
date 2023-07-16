@@ -8,8 +8,8 @@ import { UserRepository } from 'src/domain/repositories/user-repository.interfac
 export class DatabaseUserRepository implements UserRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async signUp(data: Prisma.UserCreateInput): Promise<void> {
-    await this.prismaService.user.create({ data });
+  async signUp(data: Prisma.UserCreateInput): Promise<User> {
+    return this.prismaService.user.create({ data });
   }
 
   async signIn(data: Omit<ISignIn, 'password'>): Promise<User> {

@@ -17,7 +17,7 @@ export class SignInUseCases {
   async validateLogin(
     data: ISignIn,
     remember?: boolean,
-  ): Promise<Record<string, any>> {
+  ): Promise<{ id: string; token: string }> {
     const { emailOrUsername, password } = data;
     const secret = process.env.JWT_SECRET;
     const expires = 60;
@@ -28,7 +28,10 @@ export class SignInUseCases {
       this.exception.forbiddenException({ message: 'User not found.' });
     }
 
-    const passwordMatches = this.bcryptService.compare(password, user.password);
+    const passwordMatches = await this.bcryptService.compare(
+      password,
+      user.password,
+    );
 
     if (!passwordMatches) {
       this.exception.badRequestException({ message: 'Passwords not matches.' });
@@ -43,17 +46,17 @@ export class SignInUseCases {
 
       await this.tokenCache.setToken(id, token);
 
-      return { token };
+      return { token, id };
+    } else {
+      const token = this.jwt.createExpirationToken(
+        { id, username, email },
+        secret,
+        expires,
+      );
+
+      await this.tokenCache.setExpirationToken(id, expires, token);
+
+      return { token, id };
     }
-
-    const token = this.jwt.createExpirationToken(
-      { id, username, email },
-      secret,
-      expires,
-    );
-
-    await this.tokenCache.setExpirationToken(id, expires, token);
-
-    return { token };
   }
 }
