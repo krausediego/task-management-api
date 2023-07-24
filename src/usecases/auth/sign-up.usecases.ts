@@ -16,7 +16,6 @@ export class SignUpUseCases {
     data: Prisma.UserCreateInput,
   ): Promise<{ id: string; token: string }> {
     const { password } = data;
-    const secret = process.env.JWT_SECRET;
 
     const passwordHashed = await this.bcryptService.hash(password);
 
@@ -25,7 +24,7 @@ export class SignUpUseCases {
       password: passwordHashed,
     });
 
-    const token = this.jwt.createToken({ id, username, email }, secret);
+    const token = this.jwt.createToken({ id, username, email });
 
     await this.tokenCache.setToken(id, token);
 
