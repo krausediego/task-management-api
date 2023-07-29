@@ -1,14 +1,16 @@
-import { User } from '@prisma/client';
+import { User, Team } from '@prisma/client';
+import { Response } from 'express';
 import { IBcryptService } from 'src/domain/adapters/bcrypt.interface';
 import { IJwtService } from 'src/domain/adapters/jwt.interface';
 import { ITokenCache } from 'src/domain/cache/token.interface';
 import { IException } from 'src/domain/exceptions/exceptions.interface';
 import { ISignIn } from 'src/domain/interfaces/auth/sign-in.interface';
-import { UserRepository } from 'src/domain/repositories/user-repository.interface';
+import { UserRepository, TeamRepository } from 'src/domain/repositories';
 
 export class SignInUseCases {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly teamRepository: TeamRepository,
     private readonly bcryptService: IBcryptService,
     private readonly exception: IException,
     private readonly jwt: IJwtService,
@@ -18,10 +20,11 @@ export class SignInUseCases {
   async validateLogin(
     data: ISignIn,
     remember?: boolean,
+    res?: Response,
   ): Promise<{ id: string; token: string }> {
     const { emailOrUsername, password } = data;
-    // const secret = process.env.JWT_SECRET;
-    const expires = 60;
+
+    const expires = 60 * 60 * 24;
 
     const user = await this.checkUser({ emailOrUsername });
 
@@ -29,13 +32,17 @@ export class SignInUseCases {
 
     const { id, username, email, last_login, created_at, updated_at } = user;
 
+    const teams = await this.findUserTeamMember(id);
+
     await this.userRepository.updateLastLogin(id);
 
     const token = await this.generateToken(
       remember,
-      { id, username, email, last_login, created_at, updated_at },
+      { id, username, email, last_login, created_at, updated_at, teams },
       expires,
     );
+
+    res.cookie('id', id, { httpOnly: true, domain: 'localhost' });
 
     return { token, id };
   }
@@ -66,21 +73,29 @@ export class SignInUseCases {
     }
   }
 
+  private async findUserTeamMember(user_id: string): Promise<Team[]> {
+    return this.teamRepository.findTeamByUserId({ user_id });
+  }
+
   private async generateToken(
     remember: boolean,
-    data: Omit<User, 'password'>,
-    expires: number,
+    data: Omit<User, 'password'> & { teams: Team[] },
+    expires: string | number,
   ): Promise<string> {
     if (remember) {
       const token = this.jwt.createToken(data);
 
-      await this.tokenCache.setToken(data.id, token);
+      await this.tokenCache.setToken(`token:${data.id}`, token);
 
       return token;
     } else {
       const token = this.jwt.createExpirationToken(data, expires);
 
-      await this.tokenCache.setExpirationToken(data.id, expires, token);
+      await this.tokenCache.setExpirationToken(
+        `token:${data.id}`,
+        expires,
+        token,
+      );
 
       return token;
     }

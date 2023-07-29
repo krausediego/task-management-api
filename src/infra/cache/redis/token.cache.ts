@@ -12,7 +12,7 @@ export class TokenCache implements ITokenCache {
 
   async setExpirationToken(
     id: string,
-    expiration: number,
+    expiration: string | number,
     token: string,
   ): Promise<void> {
     await this.redis.setex(id, expiration, token);

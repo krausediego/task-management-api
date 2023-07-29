@@ -1,7 +1,7 @@
 export interface ITokenCache {
   setExpirationToken(
     id: string,
-    expiration: number,
+    expiration: string | number,
     token: string,
   ): Promise<void>;
   setToken(id: string, token: string): Promise<void>;

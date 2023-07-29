@@ -21,23 +21,23 @@ model User {
 }
 
 model Team {
-  id         String       @id @default(uuid())
-  name       String
-  members    TeamMember[]
-  created_at DateTime     @default(now())
-  updated_at DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  name         String
+  team_members TeamMember[]
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
 
   @@map("Teams")
 }
 
 model TeamMember {
   id         String   @id @default(uuid())
-  team       Team     @relation(fields: [team_id], references: [id])
-  team_id    String
   user       User     @relation(fields: [user_id], references: [id])
   user_id    String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  Team       Team?    @relation(fields: [teamId], references: [id])
+  teamId     String?
 
   @@map("TeamMembers")
 }

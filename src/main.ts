@@ -8,13 +8,17 @@ import {
   ResponseInterceptor,
 } from './infra/common/interceptors/response.interceptor';
 import { AllExceptionFilter } from './infra/common/filter/exception.filter';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:3000',
+    credentials: true,
   });
+
+  app.use(cookieParser());
 
   // pipes
   app.useGlobalPipes(new ValidationPipe());

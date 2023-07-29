@@ -1,6 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { RepositoriesModule } from '../repositories/repositories.module';
-import { DatabaseUserRepository } from '../repositories/user.repository';
 import { UseCaseProxy } from './usecases-proxy';
 import { SignUpUseCases } from 'src/usecases/auth/sign-up.usecases';
 import { BcryptService } from '../services/bcrypt/bcrypt.service';
@@ -13,6 +12,10 @@ import { JwtTokenModule } from '../services/jwt/jwt.module';
 import { RedisCacheModule } from '../cache/redis/redis-cache.module';
 import { TokenCache } from '../cache/redis/token.cache';
 import { LogoutUseCases } from 'src/usecases/auth/logout.usecases';
+import {
+  DatabaseUserRepository,
+  DatabaseTeamRepository,
+} from '../repositories';
 
 @Module({
   imports: [
@@ -54,6 +57,7 @@ export class UseCasesProxyModule {
         {
           inject: [
             DatabaseUserRepository,
+            DatabaseTeamRepository,
             BcryptService,
             ExceptionsService,
             JwtTokenService,
@@ -62,13 +66,21 @@ export class UseCasesProxyModule {
           provide: UseCasesProxyModule.SIGN_IN_USECASES_PROXY,
           useFactory: (
             userRepo: DatabaseUserRepository,
+            teamRepo: DatabaseTeamRepository,
             bcrypt: BcryptService,
             exceptions: ExceptionsService,
             jwt: JwtTokenService,
             tokenCache: TokenCache,
           ) =>
             new UseCaseProxy(
-              new SignInUseCases(userRepo, bcrypt, exceptions, jwt, tokenCache),
+              new SignInUseCases(
+                userRepo,
+                teamRepo,
+                bcrypt,
+                exceptions,
+                jwt,
+                tokenCache,
+              ),
             ),
         },
         {

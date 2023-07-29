@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { IBcryptService } from 'src/domain/adapters/bcrypt.interface';
 import { IJwtService } from 'src/domain/adapters/jwt.interface';
 import { ITokenCache } from 'src/domain/cache/token.interface';
@@ -16,18 +16,40 @@ export class SignUpUseCases {
     data: Prisma.UserCreateInput,
   ): Promise<{ id: string; token: string }> {
     const { password } = data;
+    const expires = 60;
 
-    const passwordHashed = await this.bcryptService.hash(password);
+    const passwordHashed = await this.cryptPassword(password);
 
-    const { id, username, email } = await this.userRepository.signUp({
-      ...data,
-      password: passwordHashed,
-    });
+    const { id, username, email, last_login, created_at, updated_at } =
+      await this.userRepository.signUp({
+        ...data,
+        password: passwordHashed,
+      });
 
-    const token = this.jwt.createToken({ id, username, email });
-
-    await this.tokenCache.setToken(id, token);
+    const token = await this.generateToken(
+      { id, username, email, last_login, created_at, updated_at },
+      expires,
+    );
 
     return { id, token };
+  }
+
+  private async cryptPassword(password: string): Promise<string> {
+    return this.bcryptService.hash(password);
+  }
+
+  private async generateToken(
+    data: Omit<User, 'password'>,
+    expires: number,
+  ): Promise<string> {
+    const token = this.jwt.createExpirationToken(data, expires);
+
+    await this.tokenCache.setExpirationToken(
+      `token:${data.id}`,
+      expires,
+      token,
+    );
+
+    return token;
   }
 }
